@@ -25,6 +25,10 @@ log = logging.getLogger(__name__)
 
 _TICKET_RE = re.compile(r"#(\d+)")
 
+# Текст без угловых скобок: бот отправляет сообщения в режиме HTML,
+# и «<номер>» Telegram принял бы за тег.
+REPLY_HINT = "Формат: /reply номер текст. Пример: /reply 3 Запчасти пришли, можно записываться."
+
 user_router = Router(name="user")
 operator_router = Router(name="operator")
 
@@ -71,8 +75,17 @@ def format_escalation(ticket_id: int, message: Message) -> str:
         f"🆘 Обращение #{ticket_id}\n"
         f"От: {who}, id {user.id}\n"
         f"Вопрос: {html.escape(message.text or '')}\n\n"
-        f"Ответьте на это сообщение (reply) — текст уйдёт клиенту. Или: /reply {ticket_id} текст"
+        f"Ответьте на это сообщение (reply) обычным текстом — он уйдёт клиенту. "
+        f"Или командой: /reply {ticket_id} текст"
     )
+
+
+def ticket_from_reply(message: Message) -> int | None:
+    """Номер обращения из карточки, на которую оператор ответил reply-ем."""
+    if message.reply_to_message is None:
+        return None
+    match = _TICKET_RE.search(message.reply_to_message.text or "")
+    return int(match.group(1)) if match else None
 
 
 # --- клиентские обработчики --------------------------------------------------
@@ -143,12 +156,21 @@ async def _send_operator_answer(bot: Bot, storage: Storage, ticket_id: int, text
 
 @operator_router.message(Command("reply"), OperatorChat())
 async def cmd_reply(message: Message, command: CommandObject, bot: Bot, storage: Storage) -> None:
-    """``/reply <номер> <текст>`` — ответ клиенту по номеру обращения."""
+    """``/reply номер текст`` — ответ клиенту по номеру обращения.
+
+    Если команда отправлена reply-ем на карточку, номер можно не указывать:
+    ``/reply текст`` возьмёт его из карточки.
+    """
     args = (command.args or "").split(maxsplit=1)
-    if len(args) < 2 or not args[0].isdigit():
-        await message.answer("Формат: /reply <номер обращения> <текст ответа>")
+    ticket_id = ticket_from_reply(message)
+    if len(args) >= 2 and args[0].isdigit():
+        ticket_id, text = int(args[0]), args[1]
+    elif ticket_id is not None and args:
+        text = " ".join(args)
+    else:
+        await message.answer(REPLY_HINT)
         return
-    await message.answer(await _send_operator_answer(bot, storage, int(args[0]), args[1]))
+    await message.answer(await _send_operator_answer(bot, storage, ticket_id, text))
 
 
 @operator_router.message(Command("stats"), OperatorChat())
@@ -159,8 +181,8 @@ async def cmd_operator_stats(message: Message, storage: Storage) -> None:
 @operator_router.message(F.reply_to_message, F.text, OperatorChat())
 async def on_operator_reply(message: Message, bot: Bot, storage: Storage) -> None:
     """Ответ оператора reply-ем на карточку обращения."""
-    match = _TICKET_RE.search(message.reply_to_message.text or "")
-    if not match:
+    ticket_id = ticket_from_reply(message)
+    if ticket_id is None:
         await message.answer("Не вижу номера обращения в сообщении, на которое вы ответили.")
         return
-    await message.answer(await _send_operator_answer(bot, storage, int(match.group(1)), message.text))
+    await message.answer(await _send_operator_answer(bot, storage, ticket_id, message.text))

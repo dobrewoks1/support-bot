@@ -61,7 +61,10 @@ def main(argv: list[str] | None = None) -> int:
 
     from .bot.app import run_bot
 
-    asyncio.run(run_bot(settings, assistant))
+    try:
+        asyncio.run(run_bot(settings, assistant))
+    except KeyboardInterrupt:
+        print("Бот остановлен.", file=sys.stderr)
     return 0
 
 
