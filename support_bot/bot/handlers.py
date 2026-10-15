@@ -91,6 +91,14 @@ async def cmd_help(message: Message) -> None:
     )
 
 
+@user_router.message(Command("id"))
+async def cmd_id(message: Message) -> None:
+    """Показать id чата — его вписывают в OPERATOR_CHAT_ID при настройке."""
+    await message.answer(
+        f"ID этого чата: <code>{message.chat.id}</code>\nВаш user id: <code>{message.from_user.id}</code>"
+    )
+
+
 @user_router.message(Command("stats"), StatsAllowed())
 async def cmd_stats(message: Message, storage: Storage) -> None:
     await message.answer(format_stats(storage.stats()))
