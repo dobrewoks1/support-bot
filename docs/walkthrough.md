@@ -1,8 +1,8 @@
-# Показ на собеседовании: 3 минуты
+# Экскурсия за 3 минуты
 
-Подготовка один раз: `pip install -r requirements.txt`, в `.env` задан `ANTHROPIC_API_KEY`
-(для Telegram ещё `BOT_TOKEN` и `OPERATOR_CHAT_ID`), `pytest` зелёный. Открыть README на GitHub
-и терминал в папке проекта.
+Что показать, если на проект есть три минуты. Подготовка один раз: `pip install -r requirements.txt`,
+в `.env` задан `ANTHROPIC_API_KEY` (для Telegram ещё `BOT_TOKEN` и `OPERATOR_CHAT_ID`), `pytest` зелёный,
+терминал открыт в папке проекта.
 
 ## 1. Задача (20 секунд)
 
@@ -44,7 +44,7 @@ python -m support_bot --console
 тот же сценарий собран из узлов n8n (Telegram Trigger → Code → Basic LLM Chain + Anthropic →
 IF → Telegram), файл генерируется из базы знаний.
 
-## Вопросы, которые обычно задают
+## Частые вопросы
 
 - **Почему BM25, а не эмбеддинги?** База маленькая (десятки статей), вопросы короткие, BM25 с
   тегами покрывает их без внешних сервисов и за миллисекунды. Интерфейс `KnowledgeSearch`
