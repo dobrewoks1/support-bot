@@ -26,4 +26,5 @@ include = ["support_bot*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-q"
